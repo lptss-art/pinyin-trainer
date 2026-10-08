@@ -1,10 +1,11 @@
 const app = (() => {
     // State
-    let mode = ''; // 'mcq' or 'write'
+    let mode = ''; // 'mcq', 'write', 'explorer'
     let currentSound = '';
     let currentOptions = [];
     let audio = new Audio();
     let scores = JSON.parse(localStorage.getItem('pinyinScores') || '{}');
+    let groupedSounds = null;
     
     // Elements
     const setupScreen = document.getElementById('setupScreen');
@@ -15,16 +16,9 @@ const app = (() => {
     const feedback = document.getElementById('feedback');
     const nextBtn = document.getElementById('nextBtn');
     const statsDisplay = document.getElementById('statsDisplay');
-
-    // Similarity map for consonants and vowels to generate good distractors
-    const similarConsonants = {
-        'b': ['p', 'd'], 'p': ['b', 't'], 'd': ['t', 'b'], 't': ['d', 'p'],
-        'g': ['k', 'h'], 'k': ['g', 'h'], 'h': ['g', 'k'],
-        'j': ['q', 'x', 'zh'], 'q': ['j', 'x', 'ch'], 'x': ['j', 'q', 'sh'],
-        'zh': ['ch', 'sh', 'z', 'j'], 'ch': ['zh', 'sh', 'c', 'q'], 'sh': ['zh', 'ch', 's', 'x'],
-        'z': ['c', 's', 'zh'], 'c': ['z', 's', 'ch'], 's': ['z', 'c', 'sh'],
-        'm': ['n'], 'n': ['m', 'l'], 'l': ['n', 'r'], 'r': ['l', 'sh']
-    };
+    const explorerScreen = document.getElementById('explorerScreen');
+    const explorerList = document.getElementById('explorerList');
+    const explorerSearch = document.getElementById('explorerSearch');
 
     const formatPinyin = (syllableTone) => {
         const match = syllableTone.match(/^([a-z]+)(\d)$/);
@@ -67,13 +61,10 @@ const app = (() => {
     };
 
     const getWeightedRandomSound = () => {
-        // Find sounds user is bad at or hasn't played
         const candidates = pinyinSounds;
         if (!candidates || candidates.length === 0) return 'a1';
 
-        // simple weighting: 80% chance to pick something with score < 3 or unplayed
         const unmastered = candidates.filter(s => (scores[s] || 0) < 3);
-        
         if (unmastered.length > 0 && Math.random() < 0.8) {
             return unmastered[Math.floor(Math.random() * unmastered.length)];
         }
@@ -84,7 +75,6 @@ const app = (() => {
         const parsed = parsePinyin(correct);
         const options = new Set([correct]);
         
-        // 1. Same syllable, different tone
         let attempts = 0;
         while(options.size < 2 && attempts < 20) {
             const tone = Math.floor(Math.random() * 4) + 1;
@@ -93,7 +83,6 @@ const app = (() => {
             attempts++;
         }
 
-        // 2. Add random other sounds as fallback or similarity
         while (options.size < 4) {
             options.add(pinyinSounds[Math.floor(Math.random() * pinyinSounds.length)]);
         }
@@ -101,9 +90,23 @@ const app = (() => {
         return Array.from(options).sort(() => Math.random() - 0.5);
     };
 
+    const switchView = (view) => {
+        setupScreen.classList.add('hidden');
+        gameScreen.classList.add('hidden');
+        explorerScreen.classList.add('hidden');
+
+        if (view === 'trainer') {
+            setupScreen.classList.remove('hidden');
+        } else if (view === 'explorer') {
+            explorerScreen.classList.remove('hidden');
+            renderExplorer();
+        }
+    };
+
     const startApp = (selectedMode) => {
         mode = selectedMode;
         setupScreen.classList.add('hidden');
+        explorerScreen.classList.add('hidden');
         gameScreen.classList.remove('hidden');
         
         if (mode === 'mcq') {
@@ -131,7 +134,7 @@ const app = (() => {
             pinyinInput.focus();
         }
 
-        playSound();
+        playSound(currentSound);
     };
 
     const renderMCQ = () => {
@@ -146,9 +149,9 @@ const app = (() => {
         });
     };
 
-    const playSound = () => {
-        if (!currentSound) return;
-        audio.src = `sounds/${currentSound}.mp3`;
+    const playSound = (soundName) => {
+        if (!soundName) return;
+        audio.src = `sounds/${soundName}.mp3`;
         audio.play().catch(e => console.log('Audio play failed', e));
     };
 
@@ -156,7 +159,6 @@ const app = (() => {
         const isCorrect = answer === currentSound;
         handleResult(isCorrect, currentSound);
         
-        // Visual feedback
         Array.from(mcqOptions.children).forEach(btn => {
             btn.disabled = true;
             if (btn.dataset.sound === currentSound) {
@@ -199,23 +201,79 @@ const app = (() => {
     };
 
     const updateStats = () => {
-        const mastered = Object.values(scores).filter(s => s >= 3).length;
-        statsDisplay.textContent = `Maîtrisés: ${mastered} / ${pinyinSounds.length}`;
+        if (statsDisplay) {
+            const mastered = Object.values(scores).filter(s => s >= 3).length;
+            statsDisplay.textContent = `Maîtrisés: ${mastered} / ${pinyinSounds.length}`;
+        }
     };
 
-    // Keyboard support for Write mode
-    pinyinInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && feedback.classList.contains('hidden')) {
-            checkWriteAnswer();
-        } else if (e.key === 'Enter' && !nextBtn.classList.contains('hidden')) {
-            nextQuestion();
+    // --- EXPLORER LOGIC ---
+    const renderExplorer = (filter = '') => {
+        if (!groupedSounds) {
+            groupedSounds = {};
+            pinyinSounds.forEach(s => {
+                const parsed = parsePinyin(s);
+                const base = parsed.text;
+                if (!groupedSounds[base]) groupedSounds[base] = [];
+                groupedSounds[base].push(s);
+            });
+            for (let key in groupedSounds) {
+                groupedSounds[key].sort();
+            }
         }
-    });
+
+        if (!explorerList) return;
+        explorerList.innerHTML = '';
+        const query = filter.toLowerCase().trim();
+        
+        Object.keys(groupedSounds).sort().forEach(base => {
+            if (query && !base.includes(query)) return;
+            
+            const card = document.createElement('div');
+            card.className = 'bg-white p-4 rounded-xl shadow-sm flex-col gap-3 mb-4';
+            
+            const title = document.createElement('h3');
+            title.className = 'font-bold text-gray-700 capitalize text-lg';
+            title.textContent = base.replace(/uu/g, 'ü');
+            card.appendChild(title);
+            
+            const btnGrid = document.createElement('div');
+            btnGrid.className = 'grid grid-cols-4 gap-2';
+            
+            groupedSounds[base].forEach(sound => {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-secondary p-2 text-sm';
+                btn.textContent = formatPinyin(sound);
+                btn.onclick = () => playSound(sound);
+                btnGrid.appendChild(btn);
+            });
+            
+            card.appendChild(btnGrid);
+            explorerList.appendChild(card);
+        });
+    };
+
+    if (explorerSearch) {
+        explorerSearch.addEventListener('input', (e) => {
+            renderExplorer(e.target.value);
+        });
+    }
+
+    if (pinyinInput) {
+        pinyinInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && feedback.classList.contains('hidden')) {
+                checkWriteAnswer();
+            } else if (e.key === 'Enter' && !nextBtn.classList.contains('hidden')) {
+                nextQuestion();
+            }
+        });
+    }
 
     return {
         startApp,
+        switchView,
         nextQuestion,
-        playSound,
+        playSound: () => playSound(currentSound),
         checkWriteAnswer
     };
 })();

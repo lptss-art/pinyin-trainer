@@ -11,25 +11,29 @@
     <meta name="theme-color" content="#2196F3">
 </head>
 <body>
-    <div id="app" class="flex-col max-w-md mx-auto h-full p-safe">
+    <div id="app" class="flex-col max-w-md mx-auto h-full p-safe overflow-hidden">
         <!-- Header -->
-        <header class="p-4 bg-blue-500 text-white text-center rounded-b-xl shadow-md">
+        <header class="p-4 bg-blue-500 text-white text-center rounded-b-xl shadow-md flex-col gap-2">
             <h1 class="text-2xl font-bold">Pinyin Trainer</h1>
-            <p class="text-sm opacity-80" id="statsDisplay">Score: 0 | Niveau: 1</p>
+            <nav class="flex-row justify-center gap-4 mt-2">
+                <button class="btn btn-secondary text-sm p-2" onclick="app.switchView('trainer')">Entraînement</button>
+                <button class="btn btn-secondary text-sm p-2" onclick="app.switchView('explorer')">Dictionnaire</button>
+            </nav>
         </header>
 
         <!-- Main Content -->
-        <main class="flex-grow flex-col justify-center p-4">
+        <main class="flex-grow flex-col p-4 overflow-y-auto">
             
-            <!-- Setup Screen -->
-            <div id="setupScreen" class="flex-col gap-4 text-center">
+            <!-- Setup Screen (Trainer mode) -->
+            <div id="setupScreen" class="flex-col gap-4 text-center justify-center h-full">
+                <p class="text-sm opacity-80 text-gray-500 mb-4" id="statsDisplay">Score: 0 | Niveau: 1</p>
                 <h2 class="text-xl font-semibold">Choisissez votre mode</h2>
                 <button class="btn btn-primary" onclick="app.startApp('mcq')">Choix Multiple (QCM)</button>
                 <button class="btn btn-secondary" onclick="app.startApp('write')">Écriture Directe</button>
             </div>
 
-            <!-- Game Screen -->
-            <div id="gameScreen" class="hidden flex-col gap-6">
+            <!-- Game Screen (Trainer mode) -->
+            <div id="gameScreen" class="hidden flex-col gap-6 justify-center h-full">
                 
                 <div class="sound-card flex-col items-center justify-center p-8 bg-gray-100 rounded-2xl shadow-inner cursor-pointer" onclick="app.playSound()">
                     <svg class="w-16 h-16 text-blue-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
@@ -55,6 +59,14 @@
                 </div>
 
                 <button id="nextBtn" class="hidden btn btn-secondary mt-4" onclick="app.nextQuestion()">Suivant</button>
+            </div>
+
+            <!-- Explorer Screen -->
+            <div id="explorerScreen" class="hidden flex-col gap-4">
+                <input type="text" id="explorerSearch" class="input-field" placeholder="Rechercher (ex: ba, xue)...">
+                <div id="explorerList" class="flex-col gap-2 pb-8">
+                    <!-- Explorer cards generated dynamically -->
+                </div>
             </div>
             
         </main>
