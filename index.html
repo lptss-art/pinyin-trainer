@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+    <title>Pinyin Trainer</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <meta name="theme-color" content="#2196F3">
+</head>
+<body>
+    <div id="app" class="flex-col max-w-md mx-auto h-full p-safe">
+        <!-- Header -->
+        <header class="p-4 bg-blue-500 text-white text-center rounded-b-xl shadow-md">
+            <h1 class="text-2xl font-bold">Pinyin Trainer</h1>
+            <p class="text-sm opacity-80" id="statsDisplay">Score: 0 | Niveau: 1</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow flex-col justify-center p-4">
+            
+            <!-- Setup Screen -->
+            <div id="setupScreen" class="flex-col gap-4 text-center">
+                <h2 class="text-xl font-semibold">Choisissez votre mode</h2>
+                <button class="btn btn-primary" onclick="app.startApp('mcq')">Choix Multiple (QCM)</button>
+                <button class="btn btn-secondary" onclick="app.startApp('write')">Écriture Directe</button>
+            </div>
+
+            <!-- Game Screen -->
+            <div id="gameScreen" class="hidden flex-col gap-6">
+                
+                <div class="sound-card flex-col items-center justify-center p-8 bg-gray-100 rounded-2xl shadow-inner cursor-pointer" onclick="app.playSound()">
+                    <svg class="w-16 h-16 text-blue-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.707.707L4.586 13H2a1 1 0 01-1-1V8a1 1 0 011-1h2.586l3.707-3.707a1 1 0 011.09-.217zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 01-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.984 5.984 0 01-1.757 4.243 1 1 0 01-1.415-1.415A3.984 3.984 0 0013 10a3.983 3.983 0 00-1.172-2.828 1 1 0 010-1.415z" clip-rule="evenodd"></path>
+                    </svg>
+                    <p class="mt-2 text-gray-500 font-medium">Écouter</p>
+                </div>
+
+                <!-- MCQ Options -->
+                <div id="mcqOptions" class="grid grid-cols-2 gap-4 hidden">
+                    <!-- Buttons generated dynamically -->
+                </div>
+
+                <!-- Write Input -->
+                <div id="writeInput" class="hidden flex-col gap-4">
+                    <input type="text" id="pinyinInput" class="input-field" placeholder="Ex: ba1, xue2, zhong4" autocomplete="off" autocorrect="off" autocapitalize="none">
+                    <button class="btn btn-primary" onclick="app.checkWriteAnswer()">Valider</button>
+                </div>
+
+                <!-- Feedback -->
+                <div id="feedback" class="hidden p-4 rounded-xl text-center font-bold">
+                    <!-- Feedback content -->
+                </div>
+
+                <button id="nextBtn" class="hidden btn btn-secondary mt-4" onclick="app.nextQuestion()">Suivant</button>
+            </div>
+            
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="sounds_list.js"></script>
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker enregistré', reg))
+                    .catch(err => console.error('Erreur Service Worker', err));
+            });
+        }
+    </script>
+</body>
+</html>
