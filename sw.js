@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pinyin-trainer-v1';
+const CACHE_NAME = 'pinyin-trainer-v2';
 const CORE_ASSETS = [
     './',
     './index.html',

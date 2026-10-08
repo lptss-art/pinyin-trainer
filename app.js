@@ -6,6 +6,7 @@ const app = (() => {
     let audio = new Audio();
     let scores = JSON.parse(localStorage.getItem('pinyinScores') || '{}');
     let groupedSounds = null;
+    let hasAnswered = false;
     
     // Elements
     const setupScreen = document.getElementById('setupScreen');
@@ -19,6 +20,7 @@ const app = (() => {
     const explorerScreen = document.getElementById('explorerScreen');
     const explorerList = document.getElementById('explorerList');
     const explorerSearch = document.getElementById('explorerSearch');
+    const volumeControl = document.getElementById('volumeControl');
 
     const formatPinyin = (syllableTone) => {
         const match = syllableTone.match(/^([a-z]+)(\d)$/);
@@ -73,21 +75,39 @@ const app = (() => {
 
     const generateDistractors = (correct) => {
         const parsed = parsePinyin(correct);
-        const options = new Set([correct]);
+        const base = parsed.text;
         
-        let attempts = 0;
-        while(options.size < 2 && attempts < 20) {
-            const tone = Math.floor(Math.random() * 4) + 1;
-            const option = `${parsed.text}${tone}`;
-            if (pinyinSounds.includes(option)) options.add(option);
-            attempts++;
-        }
+        const allBases = [...new Set(pinyinSounds.map(s => parsePinyin(s).text))];
+        const others = allBases.filter(b => b !== base);
+        
+        const initialMatch = base.match(/^([bpmfdtnlgkhjqxrzcsyw]|zh|ch|sh)?(.*)$/);
+        const initial = initialMatch ? initialMatch[1] || '' : '';
+        const final = initialMatch ? initialMatch[2] : base;
 
-        while (options.size < 4) {
-            options.add(pinyinSounds[Math.floor(Math.random() * pinyinSounds.length)]);
-        }
+        let similar = others.filter(b => {
+            const bMatch = b.match(/^([bpmfdtnlgkhjqxrzcsyw]|zh|ch|sh)?(.*)$/);
+            const bInitial = bMatch ? bMatch[1] || '' : '';
+            const bFinal = bMatch ? bMatch[2] : b;
+            return (bInitial === initial && bFinal !== final) || (bInitial !== initial && bFinal === final);
+        });
 
-        return Array.from(options).sort(() => Math.random() - 0.5);
+        if (similar.length < 2) {
+            similar = similar.concat(others);
+        }
+        
+        const uniqueSimilar = [...new Set(similar)];
+        uniqueSimilar.sort(() => Math.random() - 0.5);
+        
+        const bases = [base, uniqueSimilar[0], uniqueSimilar[1]].sort();
+        
+        let options = [];
+        bases.forEach(b => {
+            for(let i=1; i<=4; i++) {
+                options.push(`${b}${i}`);
+            }
+        });
+
+        return options;
     };
 
     const switchView = (view) => {
@@ -122,6 +142,7 @@ const app = (() => {
     };
 
     const nextQuestion = () => {
+        hasAnswered = false;
         currentSound = getWeightedRandomSound();
         feedback.classList.add('hidden');
         nextBtn.classList.add('hidden');
@@ -141,26 +162,33 @@ const app = (() => {
         mcqOptions.innerHTML = '';
         currentOptions.forEach(opt => {
             const btn = document.createElement('button');
-            btn.className = 'btn btn-secondary';
+            btn.className = 'btn btn-secondary p-2 text-sm';
             btn.dataset.sound = opt;
             btn.textContent = formatPinyin(opt);
-            btn.onclick = () => checkAnswer(opt);
+            btn.onclick = () => {
+                if (!hasAnswered) {
+                    checkAnswer(opt);
+                } else {
+                    playSound(opt);
+                }
+            };
             mcqOptions.appendChild(btn);
         });
     };
 
     const playSound = (soundName) => {
         if (!soundName) return;
+        if (volumeControl) audio.volume = volumeControl.value;
         audio.src = `sounds/${soundName}.mp3`;
         audio.play().catch(e => console.log('Audio play failed', e));
     };
 
     const checkAnswer = (answer) => {
+        hasAnswered = true;
         const isCorrect = answer === currentSound;
         handleResult(isCorrect, currentSound);
         
         Array.from(mcqOptions.children).forEach(btn => {
-            btn.disabled = true;
             if (btn.dataset.sound === currentSound) {
                 btn.classList.remove('btn-secondary');
                 btn.classList.add('bg-success');
@@ -266,6 +294,12 @@ const app = (() => {
             } else if (e.key === 'Enter' && !nextBtn.classList.contains('hidden')) {
                 nextQuestion();
             }
+        });
+    }
+
+    if (volumeControl) {
+        volumeControl.addEventListener('input', (e) => {
+            audio.volume = e.target.value;
         });
     }
 

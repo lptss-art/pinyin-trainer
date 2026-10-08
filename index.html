@@ -15,6 +15,10 @@
         <!-- Header -->
         <header class="p-4 bg-blue-500 text-white text-center rounded-b-xl shadow-md flex-col gap-2">
             <h1 class="text-2xl font-bold">Pinyin Trainer</h1>
+            <div class="flex-row justify-center items-center gap-2 mt-2">
+                <span class="text-sm">Volume:</span>
+                <input type="range" id="volumeControl" min="0" max="1" step="0.1" value="1" class="w-24">
+            </div>
             <nav class="flex-row justify-center gap-4 mt-2">
                 <button class="btn btn-secondary text-sm p-2" onclick="app.switchView('trainer')">Entraînement</button>
                 <button class="btn btn-secondary text-sm p-2" onclick="app.switchView('explorer')">Dictionnaire</button>
@@ -43,7 +47,7 @@
                 </div>
 
                 <!-- MCQ Options -->
-                <div id="mcqOptions" class="grid grid-cols-2 gap-4 hidden">
+                <div id="mcqOptions" class="grid grid-cols-4 gap-2 hidden">
                     <!-- Buttons generated dynamically -->
                 </div>
 
