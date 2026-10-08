@@ -26,6 +26,40 @@ const app = (() => {
         'm': ['n'], 'n': ['m', 'l'], 'l': ['n', 'r'], 'r': ['l', 'sh']
     };
 
+    const formatPinyin = (syllableTone) => {
+        const match = syllableTone.match(/^([a-z]+)(\d)$/);
+        if (!match) return syllableTone.replace(/uu/g, "ü");
+        
+        let text = match[1].replace(/uu/g, "ü");
+        const tone = parseInt(match[2], 10);
+        if (tone < 1 || tone > 4) return text;
+        
+        const tonesMap = {
+            "a": ["ā", "á", "ǎ", "à"],
+            "e": ["ē", "é", "ě", "è"],
+            "i": ["ī", "í", "ǐ", "ì"],
+            "o": ["ō", "ó", "ǒ", "ò"],
+            "u": ["ū", "ú", "ǔ", "ù"],
+            "ü": ["ǖ", "ǘ", "ǚ", "ǜ"]
+        };
+
+        let target = "";
+        if (text.includes("a")) target = "a";
+        else if (text.includes("e")) target = "e";
+        else if (text.includes("o")) target = "o";
+        else if (text.includes("iu")) target = "u";
+        else if (text.includes("ui")) target = "i";
+        else {
+            const m = text.match(/[iuü]/);
+            if (m) target = m[0];
+        }
+        
+        if (target) {
+            text = text.replace(target, tonesMap[target][tone - 1]);
+        }
+        return text;
+    };
+
     const parsePinyin = (syllableTone) => {
         const match = syllableTone.match(/^([a-z]+)(\d)$/);
         if (match) return { text: match[1], tone: match[2] };
@@ -105,7 +139,8 @@ const app = (() => {
         currentOptions.forEach(opt => {
             const btn = document.createElement('button');
             btn.className = 'btn btn-secondary';
-            btn.textContent = opt;
+            btn.dataset.sound = opt;
+            btn.textContent = formatPinyin(opt);
             btn.onclick = () => checkAnswer(opt);
             mcqOptions.appendChild(btn);
         });
@@ -124,10 +159,10 @@ const app = (() => {
         // Visual feedback
         Array.from(mcqOptions.children).forEach(btn => {
             btn.disabled = true;
-            if (btn.textContent === currentSound) {
+            if (btn.dataset.sound === currentSound) {
                 btn.classList.remove('btn-secondary');
                 btn.classList.add('bg-success');
-            } else if (btn.textContent === answer && !isCorrect) {
+            } else if (btn.dataset.sound === answer && !isCorrect) {
                 btn.classList.remove('btn-secondary');
                 btn.classList.add('bg-error');
             }
@@ -159,7 +194,7 @@ const app = (() => {
     const showFeedback = (isCorrect) => {
         feedback.classList.remove('hidden');
         feedback.className = `p-4 rounded-xl text-center font-bold ${isCorrect ? 'bg-success' : 'bg-error'}`;
-        feedback.textContent = isCorrect ? 'Bravo !' : `Faux, c'était : ${currentSound}`;
+        feedback.textContent = isCorrect ? 'Bravo !' : `Faux, c'était : ${formatPinyin(currentSound)}`;
         nextBtn.classList.remove('hidden');
     };
 
