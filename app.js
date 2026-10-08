@@ -107,6 +107,15 @@ const app = (() => {
             }
         });
 
+        if (!options.includes(correct)) {
+            const index = options.indexOf(`${base}1`);
+            if (index !== -1) {
+                options[index] = correct;
+            } else {
+                options[0] = correct; // Fallback
+            }
+        }
+
         return options;
     };
 
