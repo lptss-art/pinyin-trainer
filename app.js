@@ -123,11 +123,18 @@ const app = (() => {
         setupScreen.classList.add('hidden');
         gameScreen.classList.add('hidden');
         explorerScreen.classList.add('hidden');
+        
+        const navTrainer = document.getElementById('navTrainer');
+        const navExplorer = document.getElementById('navExplorer');
+        if (navTrainer) navTrainer.classList.remove('active', 'text-primary');
+        if (navExplorer) navExplorer.classList.remove('active', 'text-primary');
 
         if (view === 'trainer') {
             setupScreen.classList.remove('hidden');
+            if (navTrainer) navTrainer.classList.add('active', 'text-primary');
         } else if (view === 'explorer') {
             explorerScreen.classList.remove('hidden');
+            if (navExplorer) navExplorer.classList.add('active', 'text-primary');
             renderExplorer();
         }
     };
@@ -210,11 +217,20 @@ const app = (() => {
         showFeedback(isCorrect);
     };
 
-    const checkWriteAnswer = () => {
-        const answer = pinyinInput.value.trim().toLowerCase();
-        if (!answer) return;
+    const checkWriteTone = (tone) => {
+        if (hasAnswered) return;
+        let syllable = pinyinInput.value.trim().toLowerCase();
+        syllable = syllable.replace(/[vü]/g, 'uu').replace(/\d/g, '');
+        if (!syllable) return;
         
-        const isCorrect = answer === currentSound;
+        hasAnswered = true;
+        let isCorrect = false;
+        if (tone === 5) {
+            isCorrect = (syllable === currentSound || syllable + '5' === currentSound);
+        } else {
+            isCorrect = (syllable + tone === currentSound);
+        }
+        
         handleResult(isCorrect, currentSound);
         showFeedback(isCorrect);
     };
@@ -298,9 +314,7 @@ const app = (() => {
 
     if (pinyinInput) {
         pinyinInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && feedback.classList.contains('hidden')) {
-                checkWriteAnswer();
-            } else if (e.key === 'Enter' && !nextBtn.classList.contains('hidden')) {
+            if (e.key === 'Enter' && !nextBtn.classList.contains('hidden')) {
                 nextQuestion();
             }
         });
@@ -317,6 +331,6 @@ const app = (() => {
         switchView,
         nextQuestion,
         playSound: () => playSound(currentSound),
-        checkWriteAnswer
+        checkWriteTone
     };
 })();

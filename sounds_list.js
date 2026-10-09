@@ -747,7 +747,7 @@ const pinyinSounds = [
     "luue2",
     "luue3",
     "luue4",
-    "luun",
+    "luun1",
     "luun2",
     "luun3",
     "luun4",
