@@ -14,7 +14,6 @@ const app = (() => {
     const mcqOptions = document.getElementById('mcqOptions');
     const writeInput = document.getElementById('writeInput');
     const pinyinInput = document.getElementById('pinyinInput');
-    const feedback = document.getElementById('feedback');
     const nextBtn = document.getElementById('nextBtn');
     const statsDisplay = document.getElementById('statsDisplay');
     const explorerScreen = document.getElementById('explorerScreen');
@@ -160,14 +159,14 @@ const app = (() => {
     const nextQuestion = () => {
         hasAnswered = false;
         currentSound = getWeightedRandomSound();
-        feedback.classList.add('hidden');
-        nextBtn.classList.add('hidden');
+        nextBtn.classList.add('invisible');
         
         if (mode === 'mcq') {
             currentOptions = generateDistractors(currentSound);
             renderMCQ();
         } else {
             pinyinInput.value = '';
+            pinyinInput.classList.remove('bg-success', 'bg-error');
             pinyinInput.focus();
         }
 
@@ -247,10 +246,13 @@ const app = (() => {
     };
 
     const showFeedback = (isCorrect) => {
-        feedback.classList.remove('hidden');
-        feedback.className = `p-4 rounded-xl text-center font-bold ${isCorrect ? 'bg-success' : 'bg-error'}`;
-        feedback.textContent = isCorrect ? 'Bravo !' : `Faux, c'était : ${formatPinyin(currentSound)}`;
-        nextBtn.classList.remove('hidden');
+        if (mode === 'write') {
+            pinyinInput.classList.add(isCorrect ? 'bg-success' : 'bg-error');
+            if (!isCorrect) {
+                pinyinInput.value = formatPinyin(currentSound);
+            }
+        }
+        nextBtn.classList.remove('invisible');
     };
 
     const updateStats = () => {
@@ -314,7 +316,7 @@ const app = (() => {
 
     if (pinyinInput) {
         pinyinInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !nextBtn.classList.contains('hidden')) {
+            if (e.key === 'Enter' && !nextBtn.classList.contains('invisible')) {
                 nextQuestion();
             }
         });
